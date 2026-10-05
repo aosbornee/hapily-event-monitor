@@ -93,19 +93,9 @@ Create a Clay table with a webhook source. The script pushes these fields per ev
 
 From there, add Clay enrichment columns to find contacts at those companies, enrich emails, and push to Instantly/HeyReach campaigns.
 
-## Runtime and caffeinate
+## Runtime
 
-**This script takes 2-3 hours to run across the full 27K account list** with default concurrency (10 batches at a time). It processes in batches of 100 companies, running 10 Apify scrapes in parallel with 20 concurrent LLM calls across all batches.
-
-Before you run it, make sure your laptop won't sleep. On macOS, run this in a separate terminal:
-
-```bash
-caffeinate -dims
-```
-
-This prevents your Mac from sleeping while the script runs. Kill it with Ctrl+C when the script finishes.
-
-**Recommended workflow:** Start the script in the morning. It should finish within a few hours. If you hit rate limits, lower the concurrency with `--batch-concurrency 5`.
+The full 27K account list takes under an hour. Smaller lists are proportionally faster - 1,000 accounts finishes in about 5 minutes.
 
 If it stops halfway (network blip, laptop restart, etc.), you won't lose progress. The CSV appends per batch, and Clay gets pushed per batch. Check the last batch number in the terminal output and resume with `--offset`:
 

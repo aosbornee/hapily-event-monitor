@@ -58,11 +58,6 @@ The script processes companies in batches of 250, running 10 batches concurrentl
 
 If the script stops halfway, nothing is lost. Events are saved to CSV and pushed to Clay per batch as it runs. Use `--offset` to resume from where it left off.
 
-Make sure your laptop doesn't sleep while it runs. On macOS, run this in a separate terminal:
-```bash
-caffeinate -dims
-```
-
 ## Schedule
 
 This is meant to be run **every 2 weeks**. The default `--days-back 14` looks at the last 14 days of LinkedIn posts, so running it biweekly covers everything without overlap.
