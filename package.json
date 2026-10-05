@@ -1,0 +1,21 @@
+{
+  "name": "event-monitor",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "dev": "tsx src/index.ts",
+    "start": "tsx src/index.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "apify-client": "^2.23.4",
+    "dotenv": "^16.4.7",
+    "openai": "^6.44.0",
+    "p-limit": "^7.3.0",
+    "tsx": "^4.19.2",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@types/node": "^26.1.1"
+  }
+}
