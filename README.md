@@ -62,9 +62,6 @@ npm start -- --dry-run
 
 # Resume from a specific batch if it stopped halfway
 npm start -- --offset 3
-
-# Adjust batch concurrency (default 10, lower if you hit rate limits)
-npm start -- --batch-concurrency 5
 ```
 
 Run this every 2 weeks to keep the event data fresh.

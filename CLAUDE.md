@@ -108,7 +108,7 @@ Each event row sent to the Clay webhook contains:
 ## If something goes wrong
 
 - **Apify errors on specific companies**: Bad LinkedIn URLs in the account list. The script skips them and moves on.
-- **Rate limiting**: The script handles retries automatically. If you see persistent rate limits, lower concurrency: `npm start -- --batch-concurrency 5`
+- **Rate limiting**: The script handles retries automatically. If you see persistent rate limits, let Andrew know.
 - **Missing fields in Clay**: Check that the webhook URL is correct and the Clay table has a webhook source configured.
 
 Questions? Ping Andrew.
