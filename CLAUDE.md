@@ -4,12 +4,15 @@ This script scrapes LinkedIn company pages for event activity and pushes discove
 
 ## Before first run
 
-1. Make sure `.env` exists with all four keys filled in (copy from `.env.example` if needed):
-   - `APIFY_TOKEN` - for LinkedIn scraping
-   - `JINA_API_KEY` - for web reading and search
-   - `OPENAI_API_KEY` - for event classification
-   - `CLAY_WEBHOOK_URL` - the Clay table's webhook URL
-   - `HUBSPOT_TOKEN` - (optional, for pulling accounts from HubSpot instead of the static JSON)
+1. Make sure `.env` exists with all four keys filled in (copy from `.env.example`):
+   - `APIFY_TOKEN` - for LinkedIn scraping ([apify.com/account/integrations](https://apify.com/account/integrations))
+   - `JINA_API_KEY` - for web reading and search ([jina.ai](https://jina.ai))
+   - `OPENAI_API_KEY` - for event classification ([platform.openai.com/api-keys](https://platform.openai.com/api-keys))
+   - `HUBSPOT_TOKEN` - HubSpot private app token for pulling the target account list
+
+   The Clay webhook URL and HubSpot list ID are already hardcoded in `src/constants.ts`. You don't need to set those.
+
+   Andrew should have already helped you get set up with these. If any are missing, ping Andrew.
 
 2. Run `npm install` if `node_modules/` doesn't exist.
 
@@ -83,10 +86,33 @@ Each event row sent to the Clay webhook contains:
 | `event_url` | Event registration/info page |
 | `detected_at` | When the script found it |
 
+## What happens downstream (in Clay)
+
+Once events land in the Clay table, the rest of the pipeline runs inside Clay:
+
+1. **Events arrive** via the webhook from this script. Each row is a company + event combination.
+
+2. **Find contacts** at those companies. Clay's Find People enrichment searches for decision makers using the title keywords (field marketing, events, marketing ops, RevOps, sales leaders, etc.). Contacts are found fresh each time, so you always get current job titles and companies. No stale data.
+
+3. **Enrich emails.** Clay runs the email waterfall (find + validate + host detection) on each contact.
+
+4. **Route to the right campaign.** A formula column determines which Instantly campaign each contact should go into, based on:
+   - **Persona** (Marketing, RevOps, Sales)
+   - **Event type** (Attending vs Hosting)
+   - **Paid or free** (if Hosting)
+   - **Timing** (Upcoming vs Past event)
+
+   This maps to the 18 evergreen Instantly campaigns. The formula outputs the campaign UUID.
+
+5. **Push to Instantly and HeyReach.** Clay pushes the enriched contacts with their assigned campaign into Instantly (email) and HeyReach (LinkedIn) for outreach.
+
+The full flow: **HubSpot list → this script → Clay table → Find People → Email enrichment → Campaign routing → Instantly/HeyReach**
+
 ## If something goes wrong
 
 - **Apify errors on specific companies**: Bad LinkedIn URLs in the account list. The script skips them and moves on.
 - **Rate limiting**: The script handles retries automatically. If you see persistent rate limits, let Andrew know.
 - **Missing fields in Clay**: Check that the webhook URL is correct and the Clay table has a webhook source configured.
+- **No events found on a run**: Normal if you've run it recently and no new event posts appeared in the last 14 days.
 
 Questions? Ping Andrew.

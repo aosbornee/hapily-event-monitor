@@ -13,9 +13,9 @@ import { confirmEvent, extractFromSearchResults, extractFromPage } from './lib/l
 import { pushToClay } from './lib/clay.js';
 import { log } from './lib/log.js';
 import type { Account, Event, LinkedInPost } from './types.js';
+import { HUBSPOT_LIST_ID, CLAY_WEBHOOK_URL } from './constants.js';
 
 const OUTPUT_DIR = resolve(__dirname, '..', 'output');
-const HUBSPOT_LIST_ID = '5277';
 
 const EVENT_KEYWORDS = [
   'booth', 'expo', 'trade show', 'tradeshow', 'conference', 'summit',
@@ -273,12 +273,8 @@ async function main() {
     return;
   }
 
-  const clayWebhookUrl = process.env.CLAY_WEBHOOK_URL;
-  if (clayWebhookUrl) {
-    log('main', `Clay webhook configured — will push events per batch`);
-  } else {
-    log('main', `No CLAY_WEBHOOK_URL set — CSV output only`);
-  }
+  const clayWebhookUrl = CLAY_WEBHOOK_URL;
+  log('main', `Clay webhook configured — will push events per batch`);
 
   const allEvents: Event[] = [];
   const seen = new Set<string>();
