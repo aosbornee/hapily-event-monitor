@@ -33,17 +33,9 @@ Andrew should have already got you set up with accounts for these. If any are mi
 
 ### 3. Account list
 
-`accounts.json` contains the target company list. Right now this is a static JSON file with ~27K HubSpot Enterprise Plus Marketing Hub accounts.
+The script pulls target accounts directly from a HubSpot company list. It fetches name, domain, and LinkedIn URL for each company automatically.
 
-Format:
-```json
-[
-  { "linkedin": "https://www.linkedin.com/company/example" },
-  { "linkedin": "https://www.linkedin.com/company/another" }
-]
-```
-
-**Future improvement:** This should be changed to pull directly from a HubSpot company list instead of a static file, so the target accounts stay dynamic as new companies are added or removed. For now, the static file works.
+To change which companies get scraped, update the list in HubSpot. Add/remove companies, exclude open deals, etc. The script picks up changes on each run.
 
 ### 4. Run it
 

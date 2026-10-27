@@ -1,6 +1,6 @@
 import { resolve, dirname } from 'path';
 import { fileURLToPath } from 'url';
-import { readFileSync, writeFileSync, appendFileSync, mkdirSync } from 'fs';
+import { writeFileSync, appendFileSync, mkdirSync } from 'fs';
 import { config } from 'dotenv';
 import pLimit from 'p-limit';
 
@@ -14,8 +14,8 @@ import { pushToClay } from './lib/clay.js';
 import { log } from './lib/log.js';
 import type { Account, Event, LinkedInPost } from './types.js';
 
-const ACCOUNTS_JSON = resolve(__dirname, '..', 'accounts.json');
 const OUTPUT_DIR = resolve(__dirname, '..', 'output');
+const HUBSPOT_LIST_ID = '5277';
 
 const EVENT_KEYWORDS = [
   'booth', 'expo', 'trade show', 'tradeshow', 'conference', 'summit',
@@ -31,10 +31,59 @@ const DEFAULT_BATCH_CONCURRENCY = 10;
 
 // ── Helpers ───────────────────────────────────────────────────────────
 
-function loadAccounts(limit?: number): Account[] {
-  const raw = readFileSync(ACCOUNTS_JSON, 'utf-8');
-  const all = JSON.parse(raw) as Account[];
-  return limit ? all.slice(0, limit) : all;
+async function loadAccounts(limit?: number): Promise<Account[]> {
+  const token = process.env.HUBSPOT_TOKEN;
+  if (!token) throw new Error('HUBSPOT_TOKEN not set in .env');
+
+  log('hubspot', `Pulling companies from HubSpot list ${HUBSPOT_LIST_ID}...`);
+
+  // Step 1: Get all company IDs from the list
+  const companyIds: string[] = [];
+  let after: string | null = null;
+
+  while (true) {
+    const url = `https://api.hubapi.com/crm/v3/lists/${HUBSPOT_LIST_ID}/memberships?limit=100${after ? `&after=${after}` : ''}`;
+    const resp = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+    if (!resp.ok) throw new Error(`HubSpot list fetch failed: ${resp.status}`);
+    const data = await resp.json() as any;
+    const members = data.results ?? [];
+    for (const m of members) companyIds.push(m.recordId);
+    after = data.paging?.next?.after ?? null;
+    if (!after || (limit && companyIds.length >= limit)) break;
+  }
+
+  const ids = limit ? companyIds.slice(0, limit) : companyIds;
+  log('hubspot', `Found ${companyIds.length} companies in list, using ${ids.length}`);
+
+  // Step 2: Batch fetch company properties (100 at a time)
+  const accounts: Account[] = [];
+  for (let i = 0; i < ids.length; i += 100) {
+    const batch = ids.slice(i, i + 100);
+    const resp = await fetch('https://api.hubapi.com/crm/v3/objects/companies/batch/read', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        inputs: batch.map(id => ({ id })),
+        properties: ['name', 'domain', 'linkedin_company_page'],
+      }),
+    });
+    if (!resp.ok) throw new Error(`HubSpot batch read failed: ${resp.status}`);
+    const data = await resp.json() as any;
+    for (const r of data.results ?? []) {
+      const p = r.properties ?? {};
+      const linkedin = p.linkedin_company_page;
+      if (!linkedin) continue;
+      accounts.push({
+        name: p.name ?? '',
+        domain: p.domain ?? '',
+        linkedin,
+      });
+    }
+    if (i % 1000 === 0 && i > 0) log('hubspot', `  Fetched ${accounts.length} accounts so far...`);
+  }
+
+  log('hubspot', `Loaded ${accounts.length} accounts with LinkedIn URLs (${ids.length - accounts.length} skipped, no LinkedIn)`);
+  return accounts;
 }
 
 const CSV_HEADERS: (keyof Event)[] = [
@@ -213,9 +262,7 @@ async function main() {
   const sinceDate = new Date(Date.now() - daysBack * 86_400_000).toISOString().slice(0, 10);
 
   _verbose = verbose;
-  log('main', `Loading accounts from ${ACCOUNTS_JSON}`);
-  const accounts = loadAccounts(limit);
-  log('main', `Loaded ${accounts.length} accounts with LinkedIn URLs`);
+  const accounts = await loadAccounts(limit);
 
   if (dryRun) {
     const batchCount = Math.ceil(accounts.length / APIFY_BATCH_SIZE);

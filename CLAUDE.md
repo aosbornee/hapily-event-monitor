@@ -22,14 +22,11 @@ This script scrapes LinkedIn company pages for event activity and pushes discove
 ## How to run it
 
 ```bash
-# Standard run (last 14 days, full account list)
+# Standard run (last 14 days, full account list from HubSpot)
 npm start
 
 # Limit to N companies (for testing or smaller runs)
 npm start -- --limit 100
-
-# Pull accounts from a HubSpot company list instead of accounts.json
-npm start -- --hubspot-list <LIST_ID>
 
 # Look back further than 14 days
 npm start -- --days-back 30
@@ -64,23 +61,9 @@ This is meant to be run **every 2 weeks**. The default `--days-back 14` looks at
 
 ## Account list
 
-There are two ways to feed accounts into the script:
+The script pulls target accounts directly from HubSpot list 5277. It fetches company name, domain, and LinkedIn URL for each company in the list.
 
-### Option 1: HubSpot list (recommended)
-Create a company list in HubSpot with your target accounts. Pass the list ID:
-```bash
-npm start -- --hubspot-list 123
-```
-This pulls companies dynamically so the list stays current as you add/remove accounts in HubSpot. The list ID is in the HubSpot URL when you open the list.
-
-### Option 2: Static JSON file
-Drop an `accounts.json` file in the repo root. Format:
-```json
-[
-  { "name": "Acme Corp", "domain": "acme.com", "linkedin": "https://www.linkedin.com/company/acme" }
-]
-```
-The script defaults to this if no `--hubspot-list` is passed.
+To change which companies get scraped, update the list in HubSpot. The script picks up changes automatically on each run. Add exclusions for open deals, customers, etc. in the HubSpot list filters.
 
 ## What it pushes to Clay
 
